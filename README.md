@@ -1,2 +1,2 @@
 # stackoverflowscraper
-Get the top k answers from stackoverflow using miscellaneous filters
+Get the top 50 answers from stackoverflow using miscellaneous filters
