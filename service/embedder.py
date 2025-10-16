@@ -1,10 +1,16 @@
+import chromadb
+from chromadb.utils import embedding_functions
 from sentence_transformers import SentenceTransformer
-import faiss
-import numpy as np
-import pickle
+import uuid
+
 
 def build_index(questions):
     model = SentenceTransformer('all-MiniLM-L6-v2')
+    client = chromadb.PersistentClient(path="./chroma_db")
+
+# Create or load a collection
+    collection = client.get_or_create_collection(name="stackoverflow_qa")
+
 
     # Suppose we already fetched StackOverflow Q&A from your API
     # questions = [
@@ -13,19 +19,18 @@ def build_index(questions):
     # ]
 
     # Create embeddings
-    texts = [q["title"] + " " + q["body"] for q in questions]
-    embeddings = model.encode(texts, show_progress_bar=True)
+    for item in questions:
+        text = item['title'] + " " + item.get('body', '') 
+        embedding = model.encode(text).tolist()
 
-    # Convert to numpy array
-    embeddings = np.array(embeddings).astype("float32")
+        collection.add(
+            documents=[text],
+            embeddings=[embedding],
+            ids=[str(uuid.uuid4())],
+            metadatas=[{
+                "question_title": item['title']
+            }]
+        )
 
-    # Create FAISS index
-    index = faiss.IndexFlatL2(embeddings.shape[1])
-    index.add(embeddings)
-
-    # Save index and metadata
-    faiss.write_index(index, "stackoverflow.index")
-    with open("questions.pkl", "wb") as f:
-        pickle.dump(questions, f)
 
     print("✅ Index built and saved!")
