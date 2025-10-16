@@ -1,25 +1,28 @@
-from fastapi import FastAPI
+from fastapi import APIRouter, Query
 import requests
 
-app = FastAPI(title="StackOverflow Secure QA API")
+from service import embedder, searcher
+
+router = APIRouter()
 
 # Base Stack Exchange API URL
 STACK_API = "https://api.stackexchange.com/2.3"
 
-@app.get("/stackoverflow/accepted")
-def get_stackoverflow_accepted():
+@router.get("/accepted")
+def get_stackoverflow_accepted(query: str = Query(..., description="User's search query, e.g. 'python keyerror'"),):
     """
     Fetch latest Stack Overflow questions that have accepted answers,
     along with their accepted answer body.
     """
     # Step 1: Get recent questions
-    questions_url = f"{STACK_API}/questions"
+    questions_url = f"{STACK_API}/search/advanced"
     params = {
         "order": "desc",
         "sort": "activity",          # could be "votes" or "creation"
         "pagesize": 100,              # top 50
         "site": "stackoverflow",
-        "filter": "withbody"         # get full question text
+        "filter": "withbody",         # get full question text
+        "q": query
     }
     results = []    
 
@@ -55,8 +58,8 @@ def get_stackoverflow_accepted():
             # Step 4: Construct a clean record for RAG
             results.append({
                 # "question_id": q["question_id"],
-                "question_title": q["title"],
-                "question_body": q.get("body", ""),
+                "title": q["title"],
+                "body": q.get("body", ""),
                 # "question_score": q.get("score", 0),
                 # "answer_id": accepted_id,
                 "answer_body": answer.get("body", ""),
@@ -64,4 +67,6 @@ def get_stackoverflow_accepted():
                 # "link": q["link"]
             })
 
+    embedder.build_index(results)
+    results = searcher.load_index(query)
     return {"count": len(results), "qa_pairs": results}
