@@ -10,7 +10,8 @@ def build_index(questions):
 
 # Create or load a collection
     collection = client.get_or_create_collection(name="stackoverflow_qa")
-
+    
+    ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name='all-MiniLM-L6-v2')
 
     # Suppose we already fetched StackOverflow Q&A from your API
     # questions = [
@@ -26,7 +27,7 @@ def build_index(questions):
         collection.add(
             documents=[text],
             embeddings=[embedding],
-            ids=[str(uuid.uuid4())],
+            ids=[str(item.get('question_id'))],
             metadatas=[{
                 "question_title": item['title']
             }]

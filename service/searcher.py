@@ -10,7 +10,7 @@ def load_index(user_query, k=5):
 # Retrieve the same collection
     collection = client.get_collection("stackoverflow_qa")
 
-    results = collection.query(query_texts=["how to fix keyerror in python"], n_results=k)
+    results = collection.query(query_texts=[user_query], n_results=k)
     return results
 
 
