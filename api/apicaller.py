@@ -2,7 +2,7 @@ from fastapi import APIRouter, Query
 import requests
 import time
 
-from service import embedder, searcher
+from service import embedder, searcher, generate
 
 router = APIRouter()
 
@@ -36,8 +36,6 @@ def get_stackoverflow_accepted(query: str = Query(..., description="User's searc
         params["page"] = page_number
         res = requests.get(questions_url, params=params)
         data = res.json()
-        print(data)
-        
         for q in data["items"]:
             accepted_id = q.get("accepted_answer_id")
             if accepted_id in answer_set:
@@ -52,8 +50,30 @@ def get_stackoverflow_accepted(query: str = Query(..., description="User's searc
         page_number += 1
         if "items" not in data or not data["has_more"]:
             break
-    print(results)
 
     embedder.build_index(results)
-    results = searcher.load_index(query)
-    return {"count": len(results), "qa_pairs": results}
+    question_ids = searcher.load_index(query)
+    final_results = []
+    print(question_ids)
+    for qid in question_ids:
+        for res in results:
+            if str(res["question_id"]) == qid:
+                final_results.append(res)
+                break
+    answerParams = {
+        "order": "desc",
+        "site": "stackoverflow",
+        "filter": "withbody"
+    }
+    answers = requests.get(f"https://api.stackexchange.com/2.3/questions/{';'.join(question_ids)}/answers", params=answerParams).json()
+    # for r in final_results:
+    #     for a in answers["items"]:
+    #         if r["answer_id"] == a["answer_id"]:
+    #             r["answer_body"] = a.get("body", "")
+    #             break
+
+    output = generate.generate_consolidated_answer(query, answers["items"])
+
+    return {"results": output}
+    
+    

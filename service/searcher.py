@@ -1,8 +1,5 @@
 import chromadb
 
-
-
-
 # Load index and data
 def load_index(user_query, k=5):  
     client = chromadb.PersistentClient(path="./chroma_db")
@@ -11,7 +8,7 @@ def load_index(user_query, k=5):
     collection = client.get_collection("stackoverflow_qa")
 
     results = collection.query(query_texts=[user_query], n_results=k)
-    return results
+    return results["ids"][0]
 
 
     # model = SentenceTransformer('all-MiniLM-L6-v2')
