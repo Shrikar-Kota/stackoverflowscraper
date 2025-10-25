@@ -36,9 +36,8 @@ def get_stackoverflow_accepted(query: str = Query(..., description="User's searc
         params["page"] = page_number
         res = requests.get(questions_url, params=params)
         data = res.json()
-
-        if "items" not in data or not data["has_more"]:
-            break
+        print(data)
+        
         for q in data["items"]:
             accepted_id = q.get("accepted_answer_id")
             if accepted_id in answer_set:
@@ -51,6 +50,8 @@ def get_stackoverflow_accepted(query: str = Query(..., description="User's searc
                 "answer_id": accepted_id,
             })
         page_number += 1
+        if "items" not in data or not data["has_more"]:
+            break
     print(results)
 
     embedder.build_index(results)
